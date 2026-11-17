@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AegisOps // Predictive IT Infrastructure Maintenance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><div class="logo">♛</div><div><b>AegisOps</b><small>Predictive IT Infrastructure Maintenance</small></div></div>
+    <nav id="nav" aria-label="Sections"></nav>
+    <div class="themes" aria-label="Colour theme"><button data-theme="royal" title="Royal Gold" style="--c:#d9b86c"></button><button data-theme="emerald" title="Imperial Emerald" style="--c:#2dd4a0"></button><button data-theme="crimson" title="Crimson Court" style="--c:#e11d48"></button></div>
+    <div class="side-foot"><span id="live-dot" class="dot"></span><span id="live-text">Connecting…</span></div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div><h1 id="page-title">Overview</h1><p id="page-sub" class="dim"></p></div>
+      <div class="actions">
+        <label class="chk"><input id="auto" type="checkbox"> Auto-play</label>
+        <label class="chk"><input id="live-toggle" type="checkbox"> Use this computer’s real stats</label>
+        <button id="btn-step" class="btn primary">Move time forward 15 min</button>
+        <button id="btn-reset" class="btn">Start over</button>
+      </div>
+    </header>
+    <div id="picker" class="picker hidden">
+      <div id="pills" class="pills" data-for="forecast analysis"></div>
+      <label data-for="forecast analysis compare">Measure
+        <select id="metric" class="sel"><option value="memory_usage">Memory</option><option value="cpu_usage">CPU</option><option value="disk_latency_ms">Disk delay</option><option value="temp_celsius">Temperature</option></select></label>
+      <label data-for="forecast">Look ahead
+        <select id="hours" class="sel"><option value="4">4 hours</option><option value="6" selected>6 hours</option><option value="12">12 hours</option><option value="24">24 hours</option></select></label>
+    </div>
+
+    <div id="profile" class="profile hidden"></div>
+    <main class="content">
+      <section data-tab="overview">
+        <div id="kpis" class="kpis"></div>
+        <div id="fleet" class="fleet"></div>
+        <div class="two">
+          <div class="panel"><h2>Which server needs help first?</h2><p class="desc">Lower health score means more urgent.</p><div id="risk"></div></div>
+          <div class="panel"><h2>Next actions</h2><p class="desc">The fixes we suggest, most urgent first.</p><div id="todo"></div></div>
+        </div>
+        <div class="panel"><h2>Activity log</h2><p class="desc">What happened in this session.</p><div id="activity"></div></div>
+      </section>
+
+      <section data-tab="forecast">
+        <div id="summary" class="callout"></div>
+        <div class="panel whatif"><div><h2>What if the load changes?</h2><p class="desc">Slide to test a busier or quieter future. Real readings stay the same; only the forecast moves.</p></div><div class="slide"><input id="whatif" type="range" min="-30" max="40" value="0" step="5" aria-label="Load change"><b id="whatif-val">0%</b></div></div>
+        <div class="panel"><div class="relative"><div id="chart" style="height:430px"></div><div id="chart-busy" class="busy hidden">Working out the forecast…</div></div></div>
+        <div class="panel"><h2>Which model is more accurate?</h2>
+          <div class="scroll"><table class="tbl"><thead><tr><th>Model</th><th>Average miss (MAE)</th><th>Big-miss score (RMSE)</th><th>Fit (R²)</th><th>Accuracy</th><th></th></tr></thead><tbody id="eval-body"></tbody></table></div>
+          <p class="dim small">We hide the last 12 hours, predict them, then compare with what really happened. Lower misses are better, and the winner draws the shaded band and raises alerts.</p></div>
+      </section>
+
+      <section data-tab="analysis">
+        <div class="panel quiet"><div><h2>Best time for maintenance</h2><p class="desc">The 3-hour window when this server is least busy.</p></div><div id="quiet" class="big"></div></div>
+        <div class="panel"><h2>What we found</h2><p class="desc">Plain-language findings from 14 days of data.</p><ul id="insights" class="insights"></ul></div>
+        <div class="panel"><h2>Numbers at a glance</h2><p class="desc">“Change per day” is the 7-day trend. “Days to limit” is how long until the safe limit at that pace.</p><div class="scroll"><table class="tbl"><thead><tr><th>Measure</th><th>Now</th><th>Average</th><th>Highest</th><th>Usual peak</th><th>Change per day</th><th>Days to limit</th><th>Spikes (48h)</th><th>Used of limit</th></tr></thead><tbody id="stats-body"></tbody></table></div></div>
+        <div class="two">
+          <div class="panel"><h2>Unusual spikes <span class="dim small">last 48 hours</span></h2><div id="spike-chart" style="height:300px"></div></div>
+          <div class="panel"><h2>Daily pattern <span class="dim small">average by hour</span></h2><div id="hour-chart" style="height:300px"></div></div>
+        </div>
+        <div class="panel"><h2>Do measures move together?</h2><p class="desc">1 means they rise and fall together. 0 means no link.</p><div id="corr-chart" style="height:340px"></div></div>
+      </section>
+
+      <section data-tab="compare">
+        <div class="panel"><h2>All servers side by side</h2><p class="desc">100% means the safe limit. Lines above it are in danger.</p><div id="cmp-chart" style="height:400px"></div></div>
+        <div class="panel"><h2>Latest values</h2><div id="cmp-cards" class="fleet"></div></div>
+      </section>
+
+      <section data-tab="tickets">
+        <div id="chips" class="chips"></div>
+        <div class="panel"><div class="scroll"><table class="tbl"><thead><tr><th>Server</th><th>Measure</th><th>Urgency</th><th>Expected problem time</th><th>Hours left</th><th>What to do</th><th>Status</th><th></th></tr></thead><tbody id="tickets-body"></tbody></table></div>
+          <button id="btn-csv" class="btn mt">Download as CSV</button></div>
+      </section>
+
+      <section data-tab="guide">
+        <div class="two">
+          <div class="panel prose"><h2>How it works</h2>
+            <p><b>1. Collect.</b> Every 5 minutes each server reports CPU, memory, disk delay and temperature.</p>
+            <p><b>2. Predict.</b> Two models look at the past 4–7 days and predict the next 2–24 hours. One uses seasonal smoothing (Holt-Winters). The other learns from recent values (Ridge regression).</p>
+            <p><b>3. Warn early.</b> If a prediction crosses a safe limit, a ticket is opened with a suggested fix. No duplicates while one is open.</p>
+            <p><b>Health score (0–100).</b> It drops as a measure gets close to its limit and drops faster when a breach is predicted soon. Critical means score under 50 or a breach within 6 hours.</p></div>
+          <div class="panel"><h2>Safe limits</h2><table class="tbl"><thead><tr><th>Measure</th><th>Limit</th><th>Why it matters</th></tr></thead><tbody>
+            <tr><td>CPU</td><td class="num">88%</td><td>Slow responses, queued work</td></tr>
+            <tr><td>Memory</td><td class="num">90%</td><td>Crashes and swapping</td></tr>
+            <tr><td>Disk delay</td><td class="num">85 ms</td><td>Slow apps and timeouts</td></tr>
+            <tr><td>Temperature</td><td class="num">82 °C</td><td>Throttling, hardware damage</td></tr></tbody></table>
+            <h2 class="mt">Words used here</h2><p class="dim small"><b>MAE</b>: average size of the miss. <b>RMSE</b>: like MAE but punishes big misses. <b>R²</b>: 1 is perfect, 0 is no better than the average. <b>Shaded band</b>: where the real value should land 95 times out of 100.</p></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div id="toasts" class="toasts"></div>
+<script src="app.js"></script>
+</body>
+</html>
